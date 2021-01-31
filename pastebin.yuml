@@ -1,0 +1,7 @@
+// {type:deployment}
+[Client]-[API proxy]
+[API proxy]ReadText-[ReadText service]
+[ReadText service]GetObject-[Object store]
+[API proxy]CreateText-[CreateText service]
+[CreateText service]PutObject-[Object store]
+[API proxy]-[note: To be clustered to meet throughput needs{bg:cornsilk}]

@@ -1,43 +1,72 @@
-# What is pastebin
-A web service that stores and shares text(or image)
-
-# Requirements
+# Features
 ```gherkin
 Feature: Create text
-    Scenario: Enter text and get URL
+    Scenario: Share text
         Given I'm on home page
-        When I enter text
+        When I enter some text
         And I click share
         Then I should see a URL to share
+    Scenario: Share text with expiration date
+    Scenario: Share text with custom URL
 Feature: Read text
     Scenario: Retrieve text using URL
-        When I visit the previously generated URL
-        Then I should see the text I previously stored
+        Given I have shared certain text under certain URL
+        When I visit the URL
+        Then I should see the text
 ```
-# Design considerations
 
-# Capacity estimation and constraints
-| Feature | Daily usage | Daily storage growth |
-|-|-|-|
-| Create text | 1 million | 1 GB |
-| Read text | 1 billion | NA |
-
-# System APIs
-```protobuf
-message CreateRequest = {
-    required string content;
+# Object store
+```typescript
+interface Text {
+    key: string;
+    body: string;
+    createdOn: Date;
+    toBeDeletedOn: Date;
 }
 ```
 
-# Diagram
-```yuml
-// {type:class}
-// {direction:topDown}
-[note: You can stick notes on diagrams too!{bg:cornsilk}]
-[Customer]<>1-orders 0..*>[Order]
-[Order]++*-*>[LineItem]
-[Order]-1>[DeliveryMethod]
-[Order]*-*>[Product|EAN_Code|promo_price()]
-[Category]<->[Product]
-[DeliveryMethod]^[National]
+# Services
+```typescript
+const HOST = 'pastebin.com/'
+
+interface CreateTextRequest {
+    text: string;
+    url?: string;
+    expireDate?: Date;
+}
+
+interface CreateTextResponse {
+    url: string;
+}
+
+function createText(request: CreateTextRequest):CreateTextResponse {
+    const id = uuid()
+    return this.store.add({key: id, body: request.text}).pipe(
+        map((response) => ({url: HOST+id})),
+    )
+}
+
+interface ReadTextRequest {
+    url: string;
+}
+
+interface ReadTextResponse {
+    text: string;
+}
+
+function readText(request: ReadTextRequest):ReadTextResponse {
+    const id = request.url.slice(HOST.length)
+    return this.store.select({key: id}).pipe(
+        map((response) => ({text: response.text})),
+    )
+}
 ```
+
+# Cost
+quantity | average | limit
+-|-|-
+text size | 1 KB | 1 MB
+Create text / day | 1 million | NA
+new storage / day | 1 GB | NA
+Read text / day | 10 million | NA
+expiration day | 100 days | 1000 days
