@@ -2,9 +2,9 @@
 ```gherkin
 Feature: Create text
     Scenario: Share text
-        Given I'm on home page
-        When I enter some text
-        And I click share
+        Given I'm on home page 
+        And I have entered some text
+        When I click share
         Then I should see a URL to share
     Scenario: Share text with expiration date
     Scenario: Share text with custom URL
@@ -21,7 +21,7 @@ interface Text {
     key: string;
     body: string;
     createdOn: Date;
-    toBeDeletedOn: Date;
+    expireDate: Date;
 }
 ```
 
@@ -39,11 +39,14 @@ interface CreateTextResponse {
     url: string;
 }
 
-function createText(request: CreateTextRequest):CreateTextResponse {
+function createText(request: CreateTextRequest): CreateTextResponse {
     const id = uuid()
-    return this.store.add({key: id, body: request.text}).pipe(
-        map((response) => ({url: HOST+id})),
-    )
+    const result = this.store.add({
+        key: id,
+        body: request.text,
+        expireDate: request.expireDate,
+        })
+    return {url: HOST+id}
 }
 
 interface ReadTextRequest {
@@ -54,11 +57,10 @@ interface ReadTextResponse {
     text: string;
 }
 
-function readText(request: ReadTextRequest):ReadTextResponse {
+function readText(request: ReadTextRequest): ReadTextResponse {
     const id = request.url.slice(HOST.length)
-    return this.store.select({key: id}).pipe(
-        map((response) => ({text: response.text})),
-    )
+    const result = this.store.select({key: id})
+    return {text: result.text}
 }
 ```
 
